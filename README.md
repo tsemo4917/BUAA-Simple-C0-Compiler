@@ -69,6 +69,6 @@ clang与vs2019，C++17及以上
 - 对于中间代码，可以参考llvm ir的设计思路，抽象出 模块--函数--基本块--语句 这几个层次，方便中间代码向目标代码的翻译，与优化
 - 优化部分，写成不同的优化pass函数，方便排查错误，解耦代码
 - 对于AST，设计一个公共的接口/父类，所有的各类AST继承这个类，通过统一的接口（虚函数）调用
-- 单一静态赋值SSA可以考虑实现
+- 静态单一赋值SSA可以考虑实现
 - 前端可以参考llvm的官方教程的实现方法 http://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html 构造lexer, parser, AST, codegen
 - 后端设计不再赘述
