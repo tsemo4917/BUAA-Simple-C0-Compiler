@@ -17,6 +17,63 @@
 - **前端可以参考llvm的官方教程的实现方法 http://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html 构造lexer, parser, AST, codegen**
 - 后端设计不再赘述
 
+
+## 关于运算表达式的算符优先级的扩展
+
+用递归下降来间接体现算符优先级，在运算符较少的情况下显然是没问题的。
+
+而出于扩展性考虑，下面推荐一种基于实现优先级定义的表达式翻译方法。
+
+参考自LLVM官方文档，对于更多运算符可自行扩展。
+
+```
+static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec,
+                                              std::unique_ptr<ExprAST> LHS) {
+  // If this is a binop, find its precedence.
+  while (true) {
+    int TokPrec = GetTokPrecedence();
+
+    // If this is a binop that binds at least as tightly as the current binop,
+    // consume it, otherwise we are done.
+    if (TokPrec < ExprPrec)
+      return LHS;
+
+    // Okay, we know this is a binop.
+    int BinOp = CurTok;
+    getNextToken(); // eat binop
+
+    // Parse the primary expression after the binary operator.
+    auto RHS = ParsePrimary();
+    if (!RHS)
+      return nullptr;
+
+    // If BinOp binds less tightly with RHS than the operator after RHS, let
+    // the pending operator take RHS as its LHS.
+    int NextPrec = GetTokPrecedence();
+    if (TokPrec < NextPrec) {
+      RHS = ParseBinOpRHS(TokPrec + 1, std::move(RHS));
+      if (!RHS)
+        return nullptr;
+    }
+
+    // Merge LHS/RHS.
+    LHS =
+        std::make_unique<BinaryExprAST>(BinOp, std::move(LHS), std::move(RHS));
+  }
+}
+
+int main() {
+  // Install standard binary operators.
+  // 1 is lowest precedence.
+  BinopPrecedence['<'] = 10;
+  BinopPrecedence['+'] = 20;
+  BinopPrecedence['-'] = 20;
+  BinopPrecedence['*'] = 40; // highest.
+  // ......
+  // ......
+}
+```
+
 ## 文法
 
 ```
@@ -72,4 +129,3 @@ http://courses.missouristate.edu/kenvollmar/mars/
 ## 项目的编译与运行
 
 clang与vs2019，C++17及以上
-
